@@ -13,7 +13,7 @@ FloatRange::FloatRange(const std::string& a_str)
 
 bool FloatRange::operator==(const FloatRange& a_rhs) const
 {
-	return (min == a_rhs.min && max == a_rhs.min);
+	return (min == a_rhs.min && max == a_rhs.max);
 }
 
 bool FloatRange::operator!=(const FloatRange& a_rhs) const
