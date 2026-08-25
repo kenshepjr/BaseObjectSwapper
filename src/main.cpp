@@ -62,7 +62,7 @@ SKSE_PLUGIN_QUERY(const SKSE::QueryInterface* a_skse, SKSE::PluginInfo* a_info)
 	const auto ver = a_skse->RuntimeVersion();
 	if (ver
 #	ifndef SKYRIMVR
-		< SKSE::RUNTIME_1_5_39
+		< SKSE::RUNTIME_SSE_1_5_39
 #	else
 		> SKSE::RUNTIME_VR_1_4_15_1
 #	endif
