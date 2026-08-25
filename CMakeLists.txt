@@ -71,6 +71,26 @@ else ()
 	)
 endif ()
 
+set(VCPKG_OVERLAY_PORTS "")
+
+if(DEFINED ENV{CommonLibSSEPath})
+	file(TO_CMAKE_PATH "$ENV{CommonLibSSEPath}" CLIB_SOURCE_DIR)
+endif()
+
+if(CLIB_SOURCE_DIR AND EXISTS "${CLIB_SOURCE_DIR}/cmake/ports/commonlib-shared/portfile.cmake")
+	list(APPEND VCPKG_OVERLAY_PORTS "${CLIB_SOURCE_DIR}/cmake/ports")
+elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/extern/CommonLibSSE/cmake/ports/commonlib-shared/portfile.cmake")
+	list(APPEND VCPKG_OVERLAY_PORTS "${CMAKE_CURRENT_SOURCE_DIR}/extern/CommonLibSSE/cmake/ports")
+else()
+	message(FATAL_ERROR "commonlib-shared overlay port not found in any CommonLibSSE checkout")
+endif()
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/cmake/ports")
+	list(APPEND VCPKG_OVERLAY_PORTS "${CMAKE_CURRENT_SOURCE_DIR}/cmake/ports")
+endif()
+
+message(STATUS "vcpkg overlay ports: ${VCPKG_OVERLAY_PORTS}")
+
 set(Boost_USE_STATIC_RUNTIME OFF CACHE BOOL "")
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "")
 
@@ -133,10 +153,9 @@ else ()
 	)
 endif()
 
-find_package(unordered_dense CONFIG REQUIRED)
-find_package(boost_container_hash CONFIG REQUIRED)
+find_package(boost_regex CONFIG REQUIRED)
+find_package(boost_unordered CONFIG REQUIRED)
 
-find_path(SRELL_INCLUDE_DIRS "srell.hpp")
 find_path(MERGEMAPPER_INCLUDE_DIRS "MergeMapperPluginAPI.h")
 find_path(CLIBUTIL_INCLUDE_DIRS "CLibUtil/string.hpp")
 
@@ -191,7 +210,6 @@ target_include_directories(
 	PRIVATE
 		${CMAKE_CURRENT_BINARY_DIR}/include
 		${CMAKE_CURRENT_SOURCE_DIR}/src
-		${SRELL_INCLUDE_DIRS}
 		${MERGEMAPPER_INCLUDE_DIRS}
 		${CLIBUTIL_INCLUDE_DIRS}
 )
@@ -200,8 +218,9 @@ target_link_libraries(
 	${PROJECT_NAME}
 	PRIVATE
 		${CommonLibName}::${CommonLibName}
-		unordered_dense::unordered_dense
-		Boost::container_hash
+		Boost::unordered
+		Boost::regex
+
 )
 
 target_precompile_headers(

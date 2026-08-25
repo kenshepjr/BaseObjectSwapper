@@ -6,32 +6,25 @@
 #include <ranges>
 
 #include "RE/Skyrim.h"
-#include "REX/REX/Singleton.h"
+#include "REX/REX.h"
 #include "SKSE/SKSE.h"
 
 #include <MergeMapperPluginAPI.h>
 
-#include <ankerl/unordered_dense.h>
+#include <boost/regex.hpp>
+#include <boost/unordered/unordered_flat_map.hpp>
+#include <boost/unordered/unordered_flat_set.hpp>
 #include <spdlog/sinks/basic_file_sink.h>
-#include <srell.hpp>
-#include <boost/container_hash/hash.hpp>
 
 #include <CLibUtil/distribution.hpp>
-#include <CLibUtil/hash.hpp>
-#include <CLibUtil/numeric.hpp>
-#include <CLibUtil/rng.hpp>
-#include <CLibUtil/string.hpp>
-#include <ClibUtil/simpleINI.hpp>
-
 #include <ClibUtil/editorID.hpp>
 
-#define DLLEXPORT __declspec(dllexport)
+#include <SimpleIni.h>
+#undef ERROR
 
-namespace logger = SKSE::log;
+namespace distribution = clib_util::distribution;
+namespace editorID = clib_util::editorID;
 using namespace std::literals;
-
-using namespace clib_util;
-using SeedRNG = clib_util::RNG;
 
 // for visting variants
 template <class... Ts>
@@ -42,10 +35,12 @@ struct overload : Ts...
 
 using FormIDStr = std::variant<RE::FormID, std::string>;
 
-template <class K, class D>
-using Map = ankerl::unordered_dense::map<K, D>;
-template <class T>
-using Set = ankerl::unordered_dense::set<T>;
+template <class K, class D, class H = boost::hash<K>, class KEqual = std::equal_to<K>>
+using Map = boost::unordered_flat_map<K, D, H, KEqual>;
+
+template <class K, class H = boost::hash<K>, class KEqual = std::equal_to<K>>
+using Set = boost::unordered_flat_set<K, H, KEqual>;
+
 template <class T>
 using OrderedSet = std::set<T>;
 
@@ -58,8 +53,6 @@ using FormIDMap = Map<RE::FormID, T>;
 
 namespace stl
 {
-	using namespace SKSE::stl;
-
 	template <class F, class T>
 	void write_vfunc()
 	{
@@ -70,9 +63,7 @@ namespace stl
 	template <class T>
 	void write_thunk_call(std::uintptr_t a_src)
 	{
-		auto& trampoline = SKSE::GetTrampoline();
-		SKSE::AllocTrampoline(14);
-
+		auto& trampoline = REL::GetTrampoline();
 		T::func = trampoline.write_call<5>(a_src, T::thunk);
 	}
 }

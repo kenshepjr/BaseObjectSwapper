@@ -9,13 +9,13 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 		break;
 	case SKSE::MessagingInterface::kPostPostLoad:
 		{
-			logger::info("{:*^30}", "MERGES");
+			REX::INFO("{:*^30}", "MERGES");
 			MergeMapperPluginAPI::GetMergeMapperInterface001();
 			if (g_mergeMapperInterface) {
 				const auto version = g_mergeMapperInterface->GetBuildNumber();
-				logger::info("Got MergeMapper interface buildnumber {}", version);
+				REX::INFO("Got MergeMapper interface buildnumber {}", version);
 			} else {
-				logger::info("MergeMapper not detected");
+				REX::INFO("MergeMapper not detected");
 			}
 		}
 		break;
@@ -27,27 +27,35 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 	}
 }
 
-#ifdef SKYRIM_AE
-extern "C" DLLEXPORT constinit auto SKSEPlugin_Version = []() {
+#ifdef SKYRIM_SUPPORT_AE
+constexpr REL::Version MIN_ADDRESS_LIBRARY_V5_RUNTIME(1, 7, 99, 0);
+
+SKSE_PLUGIN_VERSION = []() {
 	SKSE::PluginVersionData v;
-	v.PluginVersion({ Version::MAJOR, Version::MINOR, Version::PATCH });
+	v.PluginVersion(REL::Version{ Version::MAJOR, Version::MINOR, Version::PATCH });
 	v.PluginName("Base Object Swapper");
 	v.AuthorName("powerofthree");
 	v.UsesAddressLibrary();
 	v.UsesUpdatedStructs();
-	v.CompatibleVersions({ SKSE::RUNTIME_LATEST });
+	v.CompatibleVersions({ SKSE::RUNTIME_SSE_LATEST });
+
+	if constexpr (SKSE::RUNTIME_SSE_LATEST < MIN_ADDRESS_LIBRARY_V5_RUNTIME) {
+		v.MinimumRequiredXSEVersion(REL::Version{ 2, 2, 5 });
+	} else {
+		v.MinimumRequiredXSEVersion(REL::Version{ 2, 3, 0 });
+	}
 
 	return v;
 }();
 #else
-extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* a_skse, SKSE::PluginInfo* a_info)
+SKSE_PLUGIN_QUERY(const SKSE::QueryInterface* a_skse, SKSE::PluginInfo* a_info)
 {
 	a_info->infoVersion = SKSE::PluginInfo::kVersion;
 	a_info->name = "Base Object Swapper";
 	a_info->version = Version::MAJOR;
 
 	if (a_skse->IsEditor()) {
-		logger::critical("Loaded in editor, marking as incompatible"sv);
+		REX::CRITICAL("Loaded in editor, marking as incompatible");
 		return false;
 	}
 
@@ -59,7 +67,7 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* a
 		> SKSE::RUNTIME_VR_1_4_15_1
 #	endif
 	) {
-		logger::critical(FMT_STRING("Unsupported runtime version {}"), ver.string());
+		REX::CRITICAL("Unsupported runtime version {}", ver.string());
 		return false;
 	}
 
@@ -67,34 +75,30 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* a
 }
 #endif
 
-void InitializeLog()
+SKSE_PLUGIN_LOAD(const SKSE::LoadInterface* a_skse)
 {
-	auto path = logger::log_directory();
-	if (!path) {
-		stl::report_and_fail("Failed to find standard logging directory"sv);
+	SKSE::Init(a_skse, { .log = true,
+						   .logName = Version::PROJECT.data(),
+						   .logPattern = "[%m-%d %T.%e] [%L] %v",
+						   .trampoline = true,
+						   .trampolineSize = 14 });
+
+	auto runtimeVersion = a_skse->RuntimeVersion();
+
+	REX::INFO("Game version : {}", runtimeVersion);
+
+#ifdef SKYRIM_SUPPORT_AE
+	if constexpr (SKSE::RUNTIME_SSE_LATEST < MIN_ADDRESS_LIBRARY_V5_RUNTIME) {
+		if (runtimeVersion >= MIN_ADDRESS_LIBRARY_V5_RUNTIME) {
+			REX::FAIL(
+				"You are using a newer version of Skyrim than this version of {0} supports.\n"
+				"Install the correct version of {0} for your game version.\n"
+				"Runtime: {1}\n"
+				"Supported: 1.6.1170 (Steam) / 1.6.1179 (GOG)",
+				Version::PROJECT, runtimeVersion);
+		}
 	}
-
-	*path /= fmt::format(FMT_STRING("{}.log"), Version::PROJECT);
-	auto sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(path->string(), true);
-
-	auto log = std::make_shared<spdlog::logger>("global log"s, std::move(sink));
-
-	log->set_level(spdlog::level::info);
-	log->flush_on(spdlog::level::info);
-
-	spdlog::set_default_logger(std::move(log));
-	spdlog::set_pattern("[%H:%M:%S:%e] %v"s);
-
-	logger::info(FMT_STRING("{} v{}"), Version::PROJECT, Version::NAME);
-}
-
-extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_skse)
-{
-	SKSE::Init(a_skse);
-
-	InitializeLog();
-
-	logger::info("Game version : {}", a_skse->RuntimeVersion().string());
+#endif
 
 	const auto messaging = SKSE::GetMessagingInterface();
 	messaging->RegisterListener(MessageHandler);

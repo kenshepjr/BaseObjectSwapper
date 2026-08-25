@@ -6,9 +6,9 @@ RandValueParams::RandValueParams(Chance a_chance, const RE::TESObjectREFR* a_ref
 
 FloatRange::FloatRange(const std::string& a_str)
 {
-	const auto splitRange = string::split(a_str, R"(/)");
-	min = string::to_num<float>(splitRange[0]);
-	max = splitRange.size() > 1 ? string::to_num<float>(splitRange[1]) : min;
+	const auto splitRange = REX::STR::SPLIT(a_str, R"(/)");
+	min = REX::STR::TO_NUM<float>(splitRange[0]);
+	max = splitRange.size() > 1 ? REX::STR::TO_NUM<float>(splitRange[1]) : min;
 }
 
 bool FloatRange::operator==(const FloatRange& a_rhs) const
@@ -46,7 +46,7 @@ float FloatRange::GetRandomValue(const RandValueParams& a_params) const
 ScaleRange::ScaleRange(const std::string& a_str) :
 	absolute(a_str.contains('A'))
 {
-	if (srell::cmatch match; srell::regex_search(a_str.c_str(), match, regex::generic)) {
+	if (boost::cmatch match; boost::regex_search(a_str.c_str(), match, regex::generic)) {
 		value = FloatRange(match[1].str());
 	}
 }
@@ -63,7 +63,7 @@ void ScaleRange::SetScale(RE::TESObjectREFR* a_ref, const RandValueParams& a_par
 Point3Range::Point3Range(const std::string& a_str, bool a_convertToRad) :
 	relative(a_str.contains('R'))
 {
-	if (srell::cmatch match; srell::regex_search(a_str.c_str(), match, regex::transform)) {
+	if (boost::cmatch match; boost::regex_search(a_str.c_str(), match, regex::transform)) {
 		//match[0] gets the whole string
 		x = FloatRange(match[1].str());
 		y = FloatRange(match[2].str());
@@ -109,9 +109,9 @@ void ObjectProperties::assign_record_flags(const std::string& a_str, bool a_unse
 {
 	auto& flags = a_unsetFlag ? recordFlagsUnset : recordFlagsSet;
 
-	if (srell::cmatch match; srell::regex_search(a_str.c_str(), match, regex::generic)) {
-		for (const auto& str : string::split(match[1].str(), ",")) {
-			flags |= string::to_num<std::uint32_t>(str, true);
+	if (boost::cmatch match; boost::regex_search(a_str.c_str(), match, regex::generic)) {
+		for (const auto& str : REX::STR::SPLIT(match[1].str(), ",")) {
+			flags |= REX::STR::TO_NUM<std::uint32_t>(str, true);
 		}
 	}
 }

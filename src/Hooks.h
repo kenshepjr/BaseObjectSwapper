@@ -24,7 +24,7 @@ namespace BaseObjectSwapper
 		static void Install()
 		{
 			stl::write_vfunc<T, InitItemImpl>();
-			logger::info("Installed {} form swap"sv, typeid(T).name());
+			REX::INFO("Installed {} form swap"sv, typeid(T).name());
 		}
 	};
 

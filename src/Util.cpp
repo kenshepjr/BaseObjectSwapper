@@ -2,20 +2,20 @@
 
 namespace util
 {
-	std::vector<std::string> split_with_regex(const std::string& a_str, const srell::regex& a_regex)
+	std::vector<std::string> split_with_regex(const std::string& a_str, const boost::regex& a_regex)
 	{
-		srell::sregex_token_iterator iter(a_str.begin(),
+		boost::sregex_token_iterator iter(a_str.begin(),
 			a_str.end(),
 			a_regex,
 			-1);
-		srell::sregex_token_iterator end{};
+		boost::sregex_token_iterator end{};
 		return { iter, end };
 	}
 
 	RE::FormID GetFormID(const std::string& a_str)
 	{
-		if (const auto splitID = string::split(a_str, "~"); splitID.size() == 2) {
-			const auto  formID = string::to_num<RE::FormID>(splitID[0], true);
+		if (const auto splitID = REX::STR::SPLIT(a_str, "~"); splitID.size() == 2) {
+			const auto  formID = REX::STR::TO_NUM<RE::FormID>(splitID[0], true);
 			const auto& modName = splitID[1];
 			if (g_mergeMapperInterface) {
 				const auto [mergedModName, mergedFormID] = g_mergeMapperInterface->GetNewFormID(modName.c_str(), formID);
@@ -24,10 +24,10 @@ namespace util
 				return RE::TESDataHandler::GetSingleton()->LookupFormID(formID, modName);
 			}
 		}
-		if (string::is_only_hex(a_str, true)) {
-			const auto formID = string::to_num<RE::FormID>(a_str, true);
+		if (REX::STR::IS_ONLY_HEX(a_str, true)) {
+			const auto formID = REX::STR::TO_NUM<RE::FormID>(a_str, true);
 			if (const auto form = RE::TESForm::LookupByID(formID); !form) {
-				logger::error("\t\tFilter [{}] INFO - unable to find form, treating filter as cell formID", a_str);
+				REX::ERROR("\t\tFilter [{}] INFO - unable to find form, treating filter as cell formID", a_str);
 			}
 			return formID;
 		}
@@ -41,13 +41,13 @@ namespace util
 	{
 		if (a_str.contains(",")) {
 			FormIDSet  set;
-			const auto IDStrs = string::split(a_str, ",");
+			const auto IDStrs = REX::STR::SPLIT(a_str, ",");
 			set.reserve(IDStrs.size());
 			for (auto& IDStr : IDStrs) {
 				if (auto formID = GetFormID(IDStr); formID != 0) {
 					set.emplace(formID);
 				} else {
-					logger::error("\t\t\tfailed to process {} (SWAP formID not found)", IDStr);
+					REX::ERROR("\t\t\tfailed to process {} (SWAP formID not found)", IDStr);
 				}
 			}
 			return set;
@@ -60,12 +60,12 @@ namespace util
 	{
 		FormIDOrderedSet set;
 		if (a_str.contains(",")) {
-			const auto IDStrs = string::split(a_str, ",");
+			const auto IDStrs = REX::STR::SPLIT(a_str, ",");
 			for (auto& IDStr : IDStrs) {
 				if (auto formID = GetFormID(IDStr); formID != 0) {
 					set.emplace(formID);
 				} else {
-					logger::error("\t\t\tfailed to process {} (formID not found)", IDStr);
+					REX::ERROR("\t\t\tfailed to process {} (formID not found)", IDStr);
 				}
 			}
 			return set;

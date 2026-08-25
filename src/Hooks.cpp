@@ -9,7 +9,7 @@ namespace BaseObjectSwapper
 
 			const auto& [swapBase, objectProperties] = FormSwap::Manager::GetSingleton()->GetSwapData(a_ref, base);
 
-			if (swapBase && swapBase != base) {
+			if (swapBase && swapBase != base && (a_ref->GetParentCell() || a_ref->GetSaveParentCell())) {		
 				a_ref->SetObjectReference(swapBase);
 
 				if (a_ref->extraList.HasType<RE::ExtraLeveledItemBase>()) {
@@ -26,7 +26,7 @@ namespace BaseObjectSwapper
 
 	void Install()
 	{
-		logger::info("{:*^30}", "HOOKS");
+		REX::INFO("{:*^30}", "HOOKS");
 
 		InitItemImpl<RE::TESObjectREFR>::Install();
 		InitItemImpl<RE::Hazard>::Install();

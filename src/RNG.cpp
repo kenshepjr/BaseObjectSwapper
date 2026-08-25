@@ -73,10 +73,10 @@ Chance::Chance(const std::string& a_str)
 				chanceType = CHANCE_TYPE::kRefHash;
 			}
 
-			if (srell::cmatch match; srell::regex_search(a_str.c_str(), match, regex::generic)) {
-				const auto chanceOptions = string::split(match[1].str(), ",");
-				chanceValue = string::to_num<float>(chanceOptions[0]);
-				seed = chanceOptions.size() > 1 ? string::to_num<std::uint64_t>(chanceOptions[1]) : 0;
+			if (boost::cmatch match; boost::regex_search(a_str.c_str(), match, regex::generic)) {
+				const auto chanceOptions = REX::STR::SPLIT(match[1].str(), ",");
+				chanceValue = REX::STR::TO_NUM<float>(chanceOptions[0]);
+				seed = chanceOptions.size() > 1 ? REX::STR::TO_NUM<std::uint64_t>(chanceOptions[1]) : 0;
 			}
 		}
 	}

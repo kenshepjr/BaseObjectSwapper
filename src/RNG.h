@@ -28,13 +28,13 @@ public:
 	BOS_RNG(const Chance& a_chance, const RE::TESObjectREFR* a_ref);
 	BOS_RNG(const Chance& a_chance);
 
-	template <class T>
+template <class T>
 	T generate(T a_min, T a_max) const
 	{
 		if (type == CHANCE_TYPE::kRandom && seed == 0) {
-			return SeedRNG().generate<T>(a_min, a_max);
+			return REX::TRandom<T>().Generate(a_min, a_max);
 		}
-		return SeedRNG(seed).generate<T>(a_min, a_max);
+		return REX::TRandom<T>(seed).Generate(a_min, a_max);
 	}
 
 	// members

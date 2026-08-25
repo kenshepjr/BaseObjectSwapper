@@ -18,7 +18,7 @@ namespace FormSwap
 
 	void ObjectData::GetProperties(const std::string& a_path, const std::string& a_str, std::function<void(RE::FormID, ObjectData&)> a_func)
 	{
-		const auto formPair = string::split(a_str, "|");
+		const auto formPair = REX::STR::SPLIT(a_str, "|");
 		if (const auto baseFormID = util::GetFormID(formPair[0]); baseFormID != 0) {
 			const Input input(
 				formPair[1],                                        // transform
@@ -28,7 +28,7 @@ namespace FormSwap
 			ObjectData objectData(input);
 			a_func(baseFormID, objectData);
 		} else {
-			logger::error("\t\t\t\tfail : [{}] (BASE formID not found)", a_str);
+			REX::ERROR("\t\t\t\tfail : [{}] (BASE formID not found)", a_str);
 		}
 	}
 
@@ -73,7 +73,7 @@ namespace FormSwap
 			}
 		};
 
-		const auto formPair = string::split(a_str, "|");
+		const auto formPair = REX::STR::SPLIT(a_str, "|");
 
 		if (const auto baseFormID = util::GetFormID(formPair[0]); baseFormID != 0) {
 			if (const auto swapFormID = util::GetSwapFormID(formPair[1]); !swap_empty(swapFormID)) {
@@ -81,7 +81,7 @@ namespace FormSwap
 				auto chance = formPair.size() > 3 ? formPair[3] : std::string{};
 
 				if (base_same_as_swap(baseFormID, swapFormID) && !distribution::is_valid_entry(properties)) {
-					logger::error("\t\t\t\tfail : [{}] (BASE formID == SWAP formID)", a_str);
+					REX::ERROR("\t\t\t\tfail : [{}] (BASE formID == SWAP formID)", a_str);
 					return;
 				}
 
@@ -90,7 +90,7 @@ namespace FormSwap
 
 				a_func(baseFormID, swapFormData);
 			} else {
-				logger::error("\t\t\t\tfail : [{}] (SWAP formID not found)", a_str);
+				REX::ERROR("\t\t\t\tfail : [{}] (SWAP formID not found)", a_str);
 			}
 		} else if (const auto baseFormIDs = util::GetFormIDOrderedSet(formPair[0]); !baseFormIDs.empty()) {
 			if (auto swapFormIDs = util::GetFormIDOrderedSet(formPair[1]); !swapFormIDs.empty()) {
@@ -124,13 +124,13 @@ namespace FormSwap
 						}
 					}
 				} else {
-					logger::error("\t\t\t\tfail : [{}] (SWAP formIDSet.size() must be 1 OR equal/greater than BASE formIDSet.size())", a_str);
+					REX::ERROR("\t\t\t\tfail : [{}] (SWAP formIDSet.size() must be 1 OR equal/greater than BASE formIDSet.size())", a_str);
 				}
 			} else {
-				logger::error("\t\t\t\tfail : [{}] (SWAP formID set not found)", a_str);
+				REX::ERROR("\t\t\t\tfail : [{}] (SWAP formID set not found)", a_str);
 			}
 		} else {
-			logger::error("\t\t\t\tfail : [{}] (BASE formID not found)", a_str);
+			REX::ERROR("\t\t\t\tfail : [{}] (BASE formID not found)", a_str);
 		}
 	}
 }

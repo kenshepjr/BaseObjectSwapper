@@ -11,19 +11,19 @@ namespace FormSwap
 
 	void Manager::LoadForms()
 	{
-		logger::info("{:*^30}", "INI");
+		REX::INFO("{:*^30}", "INI");
 
 		std::vector<std::string> configs = distribution::get_configs(R"(Data\)", "_SWAP"sv);
 
 		if (configs.empty()) {
-			logger::warn("No .ini files with _SWAP suffix were found within the Data folder, aborting...");
+			REX::WARN("No .ini files with _SWAP suffix were found within the Data folder, aborting...");
 			return;
 		}
 
-		logger::info("{} matching inis found...", configs.size());
+		REX::INFO("{} matching inis found...", configs.size());
 
 		for (auto& path : configs) {
-			logger::info("INI : {}", path);
+			REX::INFO("INI : {}", path);
 
 			CSimpleIniA ini;
 			ini.SetUnicode();
@@ -31,7 +31,7 @@ namespace FormSwap
 			ini.SetAllowKeyOnly();
 
 			if (const auto rc = ini.LoadFile(path.c_str()); rc < 0) {
-				logger::error("\tcouldn't read INI");
+				REX::ERROR("\tcouldn't read INI");
 				continue;
 			}
 
@@ -42,10 +42,10 @@ namespace FormSwap
 			for (auto& [_section, comment, keyOrder] : sections) {
 				std::string section = _section;
 				if (section.contains('|')) {
-					auto splitSection = string::split(section, "|");
-					auto conditions = string::split(splitSection[1], ",");  //[Forms|EditorID,EditorID2]
+					auto splitSection = REX::STR::SPLIT(section, "|");
+					auto conditions = REX::STR::SPLIT(splitSection[1], ",");  //[Forms|EditorID,EditorID2]
 
-					logger::info("\treading [{}] : {} conditions", splitSection[0], conditions.size());
+					REX::INFO("\treading [{}] : {} conditions", splitSection[0], conditions.size());
 
 					ConditionFilters processedConditions(path.substr(5) + "|" + splitSection[1], conditions);
 
@@ -55,14 +55,14 @@ namespace FormSwap
 
 					if (!values.empty()) {
 						if (splitSection[0] == "Forms") {
-							logger::info("\t\t\t{} form swaps found", values.size());
+							REX::INFO("\t\t\t{} form swaps found", values.size());
 							for (const auto& key : values) {
 								SwapFormData::GetForms(path, key.pItem, [&](const RE::FormID a_baseID, const SwapFormData& a_swapData) {
 									swapFormsConditional[a_baseID][processedConditions].emplace_back(a_swapData);
 								});
 							}
 						} else {
-							logger::info("\t\t\t{} ref property overrides found", values.size());
+							REX::INFO("\t\t\t{} ref property overrides found", values.size());
 							for (const auto& key : values) {
 								ObjectData::GetProperties(path, key.pItem, [&](const RE::FormID a_baseID, const ObjectData& a_objectData) {
 									refPropertiesConditional[a_baseID][processedConditions].emplace_back(a_objectData);
@@ -71,7 +71,7 @@ namespace FormSwap
 						}
 					}
 				} else {
-					logger::info("\treading [{}]", section);
+					REX::INFO("\treading [{}]", section);
 
 					CSimpleIniA::TNamesDepend values;
 					ini.GetAllKeys(section.c_str(), values);
@@ -79,14 +79,14 @@ namespace FormSwap
 
 					if (!values.empty()) {
 						if (section == "Transforms" || section == "Properties") {
-							logger::info("\t\t\t{} ref property overrides found", values.size());
+							REX::INFO("\t\t\t{} ref property overrides found", values.size());
 							for (const auto& key : values) {
 								ObjectData::GetProperties(path, key.pItem, [&](RE::FormID a_baseID, const ObjectData& a_objectData) {
 									refProperties[a_baseID].push_back(a_objectData);
 								});
 							}
 						} else {
-							logger::info("\t\t\t{} swaps found", values.size());
+							REX::INFO("\t\t\t{} swaps found", values.size());
 							auto& map = (section == "Forms") ? swapForms : swapRefs;
 							for (const auto& key : values) {
 								SwapFormData::GetForms(path, key.pItem, [&](RE::FormID a_baseID, const SwapFormData& a_swapData) {
@@ -99,21 +99,21 @@ namespace FormSwap
 			}
 		}
 
-		logger::info("{:*^30}", "RESULT");
+		REX::INFO("{:*^30}", "RESULT");
 
-		logger::info("{} form-form swaps", swapForms.size());
-		logger::info("{} conditional form swaps", swapFormsConditional.size());
-		logger::info("{} ref-form swaps", swapRefs.size());
-		logger::info("{} ref property overrides", refProperties.size());
-		logger::info("{} conditional ref property overrides", refPropertiesConditional.size());
+		REX::INFO("{} form-form swaps", swapForms.size());
+		REX::INFO("{} conditional form swaps", swapFormsConditional.size());
+		REX::INFO("{} ref-form swaps", swapRefs.size());
+		REX::INFO("{} ref property overrides", refProperties.size());
+		REX::INFO("{} conditional ref property overrides", refPropertiesConditional.size());
 
-		logger::info("{:*^30}", "CONFLICTS");
+		REX::INFO("{:*^30}", "CONFLICTS");
 
 		const auto log_conflicts = [&]<typename T>(std::string_view a_type, const FormIDMap<T>& a_map) {
 			if (a_map.empty()) {
 				return;
 			}
-			logger::info("[{}]", a_type);
+			REX::INFO("[{}]", a_type);
 			bool conflicts = false;
 			for (auto& [baseID, swapDataVec] : a_map) {
 				if (swapDataVec.size() > 1) {
@@ -122,18 +122,18 @@ namespace FormSwap
 						continue;
 					}
 					conflicts = true;
-					auto winningForm = string::split(winningRecord.record, "|");
-					logger::warn("\t{}", winningForm[0]);
-					logger::warn("\t\twinning swap : {} ({})", winningForm[1], swapDataVec.back().path);
-					logger::warn("\t\t{} conflicts", swapDataVec.size() - 1);
+					auto winningForm = REX::STR::SPLIT(winningRecord.record, "|");
+					REX::WARN("\t{}", winningForm[0]);
+					REX::WARN("\t\twinning swap : {} ({})", winningForm[1], swapDataVec.back().path);
+					REX::WARN("\t\t{} conflicts", swapDataVec.size() - 1);
 					for (auto it = swapDataVec.rbegin() + 1; it != swapDataVec.rend(); ++it) {
 						auto losingRecord = it->record.substr(it->record.find('|') + 1);
-						logger::warn("\t\t\t{} ({})", losingRecord, it->path);
+						REX::WARN("\t\t\t{} ({})", losingRecord, it->path);
 					}
 				}
 			}
 			if (!conflicts) {
-				logger::info("\tNo conflicts found");
+				REX::INFO("\tNo conflicts found");
 			} else {
 				hasConflicts = true;
 			}
@@ -143,13 +143,13 @@ namespace FormSwap
 		log_conflicts("References"sv, swapRefs);
 		log_conflicts("Properties"sv, refProperties);
 
-		logger::info("{:*^30}", "END");
+		REX::INFO("{:*^30}", "END");
 	}
 
 	void Manager::PrintConflicts() const
 	{
 		if (const auto console = RE::ConsoleLog::GetSingleton(); hasConflicts) {
-			console->Print("[BOS] Conflicts found, check po3_BaseObjectSwapper.log in %s for more info\n", logger::log_directory()->string().c_str());
+			console->Print("[BOS] Conflicts found, check po3_BaseObjectSwapper.log in %s for more info\n", SKSE::log::log_directory()->string().c_str());
 		}
 	}
 
