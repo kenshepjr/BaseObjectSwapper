@@ -33,13 +33,13 @@ struct ConditionalInput
 		ref(a_ref),
 		base(a_form),
 		currentWorldspace(a_ref->GetWorldspace()),
-		currentLocation(a_ref->GetCurrentLocation()),
-		currentRegionList(currentCell ? currentCell->GetRegionList(false) : nullptr)
+		currentLocation(a_ref->GetCurrentLocation())
 	{
 		currentCell = a_ref->GetParentCell();
 		if (!currentCell) {
 			currentCell = a_ref->GetSaveParentCell();
 		}
+		currentRegionList = currentCell ? currentCell->GetRegionList(false) : nullptr;
 	}
 
 	[[nodiscard]] bool IsValid(RE::FormID a_formID) const;
