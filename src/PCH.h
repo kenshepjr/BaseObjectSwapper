@@ -44,7 +44,7 @@ using Set = boost::unordered_flat_set<K, H, KEqual>;
 template <class T>
 using OrderedSet = std::set<T>;
 
-using FormIDSet = Set<RE::FormID>;
+using FormIDSet = std::vector<RE::FormID>;
 using FormIDOrSet = std::variant<RE::FormID, FormIDSet>;
 using FormIDOrderedSet = OrderedSet<RE::FormID>;
 
@@ -58,13 +58,6 @@ namespace stl
 	{
 		REL::Relocation<std::uintptr_t> vtbl{ F::VTABLE[0] };
 		T::func = vtbl.write_vfunc(T::size, T::thunk);
-	}
-
-	template <class T>
-	void write_thunk_call(std::uintptr_t a_src)
-	{
-		auto& trampoline = REL::GetTrampoline();
-		T::func = trampoline.write_call<5>(a_src, T::thunk);
 	}
 }
 

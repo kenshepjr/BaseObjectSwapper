@@ -153,13 +153,15 @@ namespace FormSwap
 		}
 	}
 
-	SwapFormResult Manager::GetSwapFormConditional(const RE::TESObjectREFR* a_ref, const RE::TESForm* a_base)
+	SwapFormResult Manager::GetSwapFormConditional(const RE::TESObjectREFR* a_ref, const RE::TESForm* a_base, std::optional<ConditionalInput>& a_input)
 	{
 		if (const auto it = swapFormsConditional.find(a_base->GetFormID()); it != swapFormsConditional.end()) {
-			const ConditionalInput input(a_ref, a_base);
+			if (!a_input) {
+				a_input.emplace(a_ref, a_base);
+			}
 
 			for (auto& [filters, swapDataVec] : it->second | std::ranges::views::reverse) {
-				if (input.IsValid(filters)) {
+				if (a_input->IsValid(filters)) {
 					for (auto& swapData : swapDataVec | std::ranges::views::reverse) {
 						if (auto swapObject = swapData.GetSwapBase(a_ref)) {
 							return { swapObject, swapData.properties };
@@ -172,13 +174,15 @@ namespace FormSwap
 		return { nullptr, std::nullopt };
 	}
 
-	std::optional<ObjectProperties> Manager::GetObjectPropertiesConditional(const RE::TESObjectREFR* a_ref, const RE::TESForm* a_base)
+	std::optional<ObjectProperties> Manager::GetObjectPropertiesConditional(const RE::TESObjectREFR* a_ref, const RE::TESForm* a_base, std::optional<ConditionalInput>& a_input)
 	{
 		if (const auto it = refPropertiesConditional.find(a_base->GetFormID()); it != refPropertiesConditional.end()) {
-			const ConditionalInput input(a_ref, a_base);
+			if (!a_input) {
+				a_input.emplace(a_ref, a_base);
+			}
 
 			for (auto& [filters, objectDataVec] : it->second | std::ranges::views::reverse) {
-				if (input.IsValid(filters)) {
+				if (a_input->IsValid(filters)) {
 					for (auto& objectData : objectDataVec | std::ranges::views::reverse) {
 						if (objectData.HasValidProperties(a_ref)) {
 							return objectData.properties;
@@ -203,7 +207,8 @@ namespace FormSwap
 
 	SwapFormResult Manager::GetSwapData(const RE::TESObjectREFR* a_ref, const RE::TESForm* a_base)
 	{
-		SwapFormResult swapData{ nullptr, std::nullopt };
+		SwapFormResult                  swapData{ nullptr, std::nullopt };
+		std::optional<ConditionalInput> input;
 
 		// get base
 		const auto get_swap_base = [a_ref](const RE::TESForm* a_form, const FormIDMap<SwapFormDataVec>& a_map) -> SwapFormResult {
@@ -222,7 +227,7 @@ namespace FormSwap
 			swapData = get_swap_base(a_ref, swapRefs);
 		}
 		if (!swapData.first) {
-			swapData = GetSwapFormConditional(a_ref, a_base);
+			swapData = GetSwapFormConditional(a_ref, a_base, input);
 		}
 		if (!swapData.first) {
 			swapData = get_swap_base(a_base, swapForms);
@@ -262,7 +267,7 @@ namespace FormSwap
 			swapData.second = get_properties(a_ref);
 		}
 		if (!has_properties(swapData.second)) {
-			swapData.second = GetObjectPropertiesConditional(a_ref, a_base);
+			swapData.second = GetObjectPropertiesConditional(a_ref, a_base, input);
 		}
 		if (!has_properties(swapData.second)) {
 			swapData.second = get_properties(a_base);

@@ -46,12 +46,9 @@ namespace FormSwap
 		if (const auto formID = std::get_if<RE::FormID>(&formIDSet); formID) {
 			return RE::TESForm::LookupByID<RE::TESBoundObject>(*formID);
 		} else {  // return random element from set
-			auto& set = std::get<FormIDSet>(formIDSet);
-
-			const auto setEnd = std::distance(set.begin(), set.end()) - 1;
-			const auto randIt = BOS_RNG(chance, a_ref).generate<std::int64_t>(0, setEnd);
-
-			return RE::TESForm::LookupByID<RE::TESBoundObject>(*std::next(set.begin(), randIt));
+			auto&      set = std::get<FormIDSet>(formIDSet);
+			const auto randIt = BOS_RNG(chance, a_ref).generate<std::size_t>(0, set.size() - 1);
+			return RE::TESForm::LookupByID<RE::TESBoundObject>(set[randIt]);
 		}
 	}
 
@@ -107,7 +104,7 @@ namespace FormSwap
 						a_func(itBaseFormID, swapFormData);
 					}
 
-				// randomly assign each baseFormID to a unique swapFormID
+					// randomly assign each baseFormID to a unique swapFormID
 				} else if (swapFormIDs.size() >= baseFormIDs.size()) {
 					auto a_chance = Chance(chance);
 					auto a_rng = BOS_RNG(a_chance);
@@ -115,7 +112,7 @@ namespace FormSwap
 					for (auto itBaseFormID : baseFormIDs) {
 						const auto setEnd = std::distance(swapFormIDs.begin(), swapFormIDs.end()) - 1;
 						const auto randIt = a_rng.generate<std::int64_t>(0, setEnd);
-						auto swapFormID = swapFormIDs.extract(*std::next(swapFormIDs.begin(), randIt));
+						auto       swapFormID = swapFormIDs.extract(*std::next(swapFormIDs.begin(), randIt));
 						if (swapFormID) {
 							const Input  input(properties, std::string{}, a_str, a_path);
 							SwapFormData swapFormData(swapFormID.value(), input);

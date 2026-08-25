@@ -12,8 +12,12 @@ ConditionFilters::ConditionFilters(std::string a_conditionID, std::vector<std::s
 			condition.erase(0, 1);
 			negate = true;
 		}
-		if (const auto processedID = util::GetFormID(condition); processedID != 0) {
-			negate ? NOT.emplace_back(processedID) : MATCH.emplace_back(processedID);
+		if (const auto [processedID, form] = util::GetFormWithID(condition, true); processedID != 0) {
+			if (form && !form->IsDynamicForm()) {
+				negate ? NOT.emplace_back(form) : MATCH.emplace_back(form);
+			} else {
+				negate ? NOT.emplace_back(processedID) : MATCH.emplace_back(processedID);
+			}
 		} else {
 			REX::ERROR("\t\tFilter [{}] INFO - unable to find form, treating filter as FF keyword or cell editorID", condition);
 			negate ? NOT.emplace_back(condition) : MATCH.emplace_back(condition);
@@ -23,16 +27,21 @@ ConditionFilters::ConditionFilters(std::string a_conditionID, std::vector<std::s
 
 bool ConditionalInput::IsValid(RE::FormID a_formID) const
 {
-	if (const auto form = RE::TESForm::LookupByID(a_formID)) {
-		switch (form->GetFormType()) {
+	return IsValid(RE::TESForm::LookupByID(a_formID));
+}
+
+bool ConditionalInput::IsValid(RE::TESForm* a_form) const
+{
+	if (a_form) {
+		switch (a_form->GetFormType()) {
 		case RE::FormType::Location:
 			{
-				const auto location = form->As<RE::BGSLocation>();
+				const auto location = a_form->As<RE::BGSLocation>();
 				return currentLocation && (currentLocation == location || currentLocation->IsParent(location));
 			}
 		case RE::FormType::Region:
 			{
-				if (const auto region = form->As<RE::TESRegion>()) {
+				if (const auto region = a_form->As<RE::TESRegion>()) {
 					if (currentRegionList) {
 						return std::ranges::any_of(*currentRegionList, [&](const auto& regionInList) {
 							return regionInList && regionInList == region;
@@ -43,14 +52,14 @@ bool ConditionalInput::IsValid(RE::FormID a_formID) const
 			}
 		case RE::FormType::Keyword:
 			{
-				const auto keyword = form->As<RE::BGSKeyword>();
+				const auto keyword = a_form->As<RE::BGSKeyword>();
 				return currentLocation && currentLocation->HasKeyword(keyword) || ref->HasKeyword(keyword);
 			}
 		case RE::FormType::Cell:
-			return currentCell == form;
+			return currentCell == a_form;
 		case RE::FormType::WorldSpace:
 			{
-				const auto worldspace = form->As<RE::TESWorldSpace>();
+				const auto worldspace = a_form->As<RE::TESWorldSpace>();
 				return currentWorldspace && (currentWorldspace == worldspace || currentWorldspace->parentWorld == worldspace);
 			}
 		default:
@@ -78,11 +87,14 @@ bool ConditionalInput::IsValid(const std::string& a_edid) const
 	return false;
 }
 
-bool ConditionalInput::IsValid(const FormIDStr& a_data) const
+bool ConditionalInput::IsValid(const ConditionData& a_data) const
 {
 	bool result = false;
 
 	std::visit(overload{
+				   [&](RE::TESForm* a_form) {
+					   result = IsValid(a_form);
+				   },
 				   [&](RE::FormID a_formID) {
 					   result = IsValid(a_formID);
 				   },

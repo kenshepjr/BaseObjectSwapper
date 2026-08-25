@@ -1,5 +1,7 @@
 #pragma once
 
+using ConditionData = std::variant<RE::TESForm*, RE::FormID, std::string>;
+
 struct ConditionFilters
 {
 public:
@@ -17,9 +19,9 @@ public:
 	}
 
 	// members
-	std::string            conditionID{};  // path|condition1,condition2
-	std::vector<FormIDStr> NOT{};
-	std::vector<FormIDStr> MATCH{};
+	std::string                conditionID{};  // path|condition1,condition2
+	std::vector<ConditionData> NOT{};
+	std::vector<ConditionData> MATCH{};
 };
 
 template <class T>
@@ -30,16 +32,21 @@ struct ConditionalInput
 	ConditionalInput(const RE::TESObjectREFR* a_ref, const RE::TESForm* a_form) :
 		ref(a_ref),
 		base(a_form),
-		currentCell(a_ref->GetSaveParentCell()),
 		currentWorldspace(a_ref->GetWorldspace()),
 		currentLocation(a_ref->GetCurrentLocation()),
 		currentRegionList(currentCell ? currentCell->GetRegionList(false) : nullptr)
-	{}
+	{
+		currentCell = a_ref->GetParentCell();
+		if (!currentCell) {
+			currentCell = a_ref->GetSaveParentCell();
+		}
+	}
 
 	[[nodiscard]] bool IsValid(RE::FormID a_formID) const;
+	[[nodiscard]] bool IsValid(RE::TESForm* a_form) const;
 	[[nodiscard]] bool IsValid(const std::string& a_edid) const;
 
-	[[nodiscard]] bool IsValid(const FormIDStr& a_data) const;
+	[[nodiscard]] bool IsValid(const ConditionData& a_data) const;
 	[[nodiscard]] bool IsValid(const ConditionFilters& a_filters) const;
 
 	// members

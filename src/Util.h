@@ -11,7 +11,9 @@ namespace util
 {
 	std::vector<std::string> split_with_regex(const std::string& a_str, const boost::regex& a_regex);
 
-	RE::FormID  GetFormID(const std::string& a_str);
-	FormIDOrSet GetSwapFormID(const std::string& a_str);
-	FormIDOrderedSet GetFormIDOrderedSet(const std::string& a_str);
+	std::pair<RE::FormID, RE::TESForm*> GetFormWithID(const std::string& a_str, bool a_resolveForm);
+	RE::FormID                          GetFormID(const std::string& a_str);
+
+	FormIDOrSet                         GetSwapFormID(const std::string& a_str);
+	FormIDOrderedSet                    GetFormIDOrderedSet(const std::string& a_str);
 }

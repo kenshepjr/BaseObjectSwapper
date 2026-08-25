@@ -10,7 +10,6 @@
     {
       "name": "commonlib-shared",
       "features": [
-        "xbyak",
         "ini",
         "random"
       ]
