@@ -1,4 +1,5 @@
 #include "Hooks.h"
+#include "SwapExporter.h"
 
 namespace BaseObjectSwapper
 {
@@ -10,6 +11,7 @@ namespace BaseObjectSwapper
 			const auto& [swapBase, objectProperties] = FormSwap::Manager::GetSingleton()->GetSwapData(a_ref, base);
 
 			if (swapBase && swapBase != base && (a_ref->GetParentCell() || a_ref->GetSaveParentCell())) {		
+				SwapExporter::RecordSwap(a_ref, swapBase);
 				a_ref->SetObjectReference(swapBase);
 
 				if (a_ref->extraList.HasType<RE::ExtraLeveledItemBase>()) {
