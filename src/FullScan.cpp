@@ -11,89 +11,108 @@ namespace BaseObjectSwapper::FullScan
             return;
         }
 
-        auto& forms =
-            dataHandler->GetFormArray(RE::FormType::Reference);
+        auto& cells =
+            dataHandler->GetFormArray(RE::FormType::Cell);
 
-        std::size_t arrayEntries = 0;
-        std::size_t validRefs = 0;
-        std::size_t dynamicRefs = 0;
-        std::size_t refsWithFile = 0;
+        std::size_t cellArrayEntries = 0;
+        std::size_t validCells = 0;
+        std::size_t attachedCells = 0;
+        std::size_t unattachedCells = 0;
+        std::size_t cellsWithRefs = 0;
+
+        std::size_t totalRefs = 0;
+        std::size_t refsInAttachedCells = 0;
+        std::size_t refsInUnattachedCells = 0;
         std::size_t refsWithBase = 0;
-        std::size_t refsWithParentCell = 0;
-        std::size_t refsWithSaveParentCell = 0;
-        std::size_t refsWithEitherCell = 0;
+        std::size_t refsWithFile = 0;
 
-        for (auto* form : forms) {
-            ++arrayEntries;
+        for (auto* form : cells) {
+            ++cellArrayEntries;
 
             if (!form) {
                 continue;
             }
 
-            const auto* ref = form->As<RE::TESObjectREFR>();
+            auto* cell = form->As<RE::TESObjectCELL>();
 
-            if (!ref) {
+            if (!cell) {
                 continue;
             }
 
-            ++validRefs;
+            ++validCells;
 
-            if (ref->IsDynamicForm()) {
-                ++dynamicRefs;
+            const bool attached = cell->IsAttached();
+
+            if (attached) {
+                ++attachedCells;
+            } else {
+                ++unattachedCells;
             }
 
-            if (ref->GetFile(0)) {
-                ++refsWithFile;
-            }
+            std::size_t refsInThisCell = 0;
 
-            if (ref->GetBaseObject()) {
-                ++refsWithBase;
-            }
+            cell->ForEachReference(
+                [&](RE::TESObjectREFR* ref) {
+                    if (!ref) {
+                        return RE::BSContainer::ForEachResult::kContinue;
+                    }
 
-            const bool hasParent =
-                ref->GetParentCell() != nullptr;
+                    ++refsInThisCell;
+                    ++totalRefs;
 
-            const bool hasSaveParent =
-                ref->GetSaveParentCell() != nullptr;
+                    if (attached) {
+                        ++refsInAttachedCells;
+                    } else {
+                        ++refsInUnattachedCells;
+                    }
 
-            if (hasParent) {
-                ++refsWithParentCell;
-            }
+                    if (ref->GetBaseObject()) {
+                        ++refsWithBase;
+                    }
 
-            if (hasSaveParent) {
-                ++refsWithSaveParentCell;
-            }
+                    if (ref->GetFile(0)) {
+                        ++refsWithFile;
+                    }
 
-            if (hasParent || hasSaveParent) {
-                ++refsWithEitherCell;
+                    return RE::BSContainer::ForEachResult::kContinue;
+                });
+
+            if (refsInThisCell > 0) {
+                ++cellsWithRefs;
             }
         }
 
-        REX::INFO("{:*^30}", "BOS FULL SCAN");
+        REX::INFO("{:*^30}", "BOS CELL SCAN");
         REX::INFO(
-            "Reference array entries : {}",
-            arrayEntries);
+            "Cell array entries       : {}",
+            cellArrayEntries);
         REX::INFO(
-            "Valid TESObjectREFR     : {}",
-            validRefs);
+            "Valid TESObjectCELL      : {}",
+            validCells);
         REX::INFO(
-            "Dynamic references      : {}",
-            dynamicRefs);
+            "Attached cells           : {}",
+            attachedCells);
         REX::INFO(
-            "References with file    : {}",
-            refsWithFile);
+            "Unattached cells         : {}",
+            unattachedCells);
         REX::INFO(
-            "References with base    : {}",
+            "Cells containing refs    : {}",
+            cellsWithRefs);
+        REX::INFO(
+            "Total cell references    : {}",
+            totalRefs);
+        REX::INFO(
+            "Refs in attached cells   : {}",
+            refsInAttachedCells);
+        REX::INFO(
+            "Refs in unattached cells : {}",
+            refsInUnattachedCells);
+        REX::INFO(
+            "References with base     : {}",
             refsWithBase);
         REX::INFO(
-            "References with parent  : {}",
-            refsWithParentCell);
-        REX::INFO(
-            "References with save cell: {}",
-            refsWithSaveParentCell);
-        REX::INFO(
-            "References with either  : {}",
-            refsWithEitherCell);
-        REX::INFO("{:*^30}", "END FULL SCAN");
+            "References with file     : {}",
+            refsWithFile);
+        REX::INFO("{:*^30}", "END CELL SCAN");
     }
 }
