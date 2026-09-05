@@ -22,6 +22,8 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 		break;
 	case SKSE::MessagingInterface::kDataLoaded:
 		FormSwap::Manager::GetSingleton()->PrintConflicts();
+		break;
+	case SKSE::MessagingInterface::kPostLoadGame:
 		BaseObjectSwapper::FullScan::RunDiagnostics();
 		break;
 	default:
