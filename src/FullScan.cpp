@@ -4,115 +4,120 @@ namespace BaseObjectSwapper::FullScan
 {
     void RunDiagnostics()
     {
-        auto* dataHandler = RE::TESDataHandler::GetSingleton();
+        const auto& [allForms, allFormsLock] =
+            RE::TESForm::GetAllForms();
 
-        if (!dataHandler) {
-            REX::ERROR("BOS Full Scan: TESDataHandler not available");
+        if (!allForms) {
+            REX::ERROR("BOS Global Scan: TESForm::GetAllForms returned null");
             return;
         }
 
-        auto& cells =
-            dataHandler->GetFormArray(RE::FormType::Cell);
+        [[maybe_unused]] const RE::BSReadLockGuard lockGuard{
+            allFormsLock
+        };
 
-        std::size_t cellArrayEntries = 0;
-        std::size_t validCells = 0;
-        std::size_t attachedCells = 0;
-        std::size_t unattachedCells = 0;
-        std::size_t cellsWithRefs = 0;
+        std::size_t totalForms = 0;
+        std::size_t validForms = 0;
 
-        std::size_t totalRefs = 0;
-        std::size_t refsInAttachedCells = 0;
-        std::size_t refsInUnattachedCells = 0;
+        std::size_t cellForms = 0;
+        std::size_t referenceForms = 0;
+
         std::size_t refsWithBase = 0;
         std::size_t refsWithFile = 0;
+        std::size_t refsWithParentCell = 0;
+        std::size_t refsWithSaveParentCell = 0;
+        std::size_t refsWithEitherCell = 0;
 
-        for (auto* form : cells) {
-            ++cellArrayEntries;
+        std::size_t dynamicRefs = 0;
+
+        for (auto it = allForms->begin();
+             it != allForms->end();
+             ++it) {
+
+            ++totalForms;
+
+            auto* form = it->second;
 
             if (!form) {
                 continue;
             }
 
-            auto* cell = form->As<RE::TESObjectCELL>();
+            ++validForms;
 
-            if (!cell) {
+            if (form->As<RE::TESObjectCELL>()) {
+                ++cellForms;
+            }
+
+            auto* ref = form->As<RE::TESObjectREFR>();
+
+            if (!ref) {
                 continue;
             }
 
-            ++validCells;
+            ++referenceForms;
 
-            const bool attached = cell->IsAttached();
-
-            if (attached) {
-                ++attachedCells;
-            } else {
-                ++unattachedCells;
+            if (ref->IsDynamicForm()) {
+                ++dynamicRefs;
             }
 
-            std::size_t refsInThisCell = 0;
+            if (ref->GetBaseObject()) {
+                ++refsWithBase;
+            }
 
-            cell->ForEachReference(
-                [&](RE::TESObjectREFR* ref) {
-                    if (!ref) {
-                        return RE::BSContainer::ForEachResult::kContinue;
-                    }
+            if (ref->GetFile(0)) {
+                ++refsWithFile;
+            }
 
-                    ++refsInThisCell;
-                    ++totalRefs;
+            const bool hasParent =
+                ref->GetParentCell() != nullptr;
 
-                    if (attached) {
-                        ++refsInAttachedCells;
-                    } else {
-                        ++refsInUnattachedCells;
-                    }
+            const bool hasSaveParent =
+                ref->GetSaveParentCell() != nullptr;
 
-                    if (ref->GetBaseObject()) {
-                        ++refsWithBase;
-                    }
+            if (hasParent) {
+                ++refsWithParentCell;
+            }
 
-                    if (ref->GetFile(0)) {
-                        ++refsWithFile;
-                    }
+            if (hasSaveParent) {
+                ++refsWithSaveParentCell;
+            }
 
-                    return RE::BSContainer::ForEachResult::kContinue;
-                });
-
-            if (refsInThisCell > 0) {
-                ++cellsWithRefs;
+            if (hasParent || hasSaveParent) {
+                ++refsWithEitherCell;
             }
         }
 
-        REX::INFO("{:*^30}", "BOS CELL SCAN");
+        REX::INFO("{:*^30}", "BOS GLOBAL SCAN");
         REX::INFO(
-            "Cell array entries       : {}",
-            cellArrayEntries);
+            "All forms in map         : {}",
+            totalForms);
         REX::INFO(
-            "Valid TESObjectCELL      : {}",
-            validCells);
+            "Valid TESForm entries    : {}",
+            validForms);
         REX::INFO(
-            "Attached cells           : {}",
-            attachedCells);
+            "CELL forms               : {}",
+            cellForms);
         REX::INFO(
-            "Unattached cells         : {}",
-            unattachedCells);
+            "REFR forms               : {}",
+            referenceForms);
         REX::INFO(
-            "Cells containing refs    : {}",
-            cellsWithRefs);
+            "Dynamic REFRs            : {}",
+            dynamicRefs);
         REX::INFO(
-            "Total cell references    : {}",
-            totalRefs);
-        REX::INFO(
-            "Refs in attached cells   : {}",
-            refsInAttachedCells);
-        REX::INFO(
-            "Refs in unattached cells : {}",
-            refsInUnattachedCells);
-        REX::INFO(
-            "References with base     : {}",
+            "REFRs with base          : {}",
             refsWithBase);
         REX::INFO(
-            "References with file     : {}",
+            "REFRs with file          : {}",
             refsWithFile);
-        REX::INFO("{:*^30}", "END CELL SCAN");
+        REX::INFO(
+            "REFRs with parent cell   : {}",
+            refsWithParentCell);
+        REX::INFO(
+            "REFRs with save cell     : {}",
+            refsWithSaveParentCell);
+        REX::INFO(
+            "REFRs with either cell   : {}",
+            refsWithEitherCell);
+        REX::INFO("{:*^30}", "END GLOBAL SCAN");
     }
 }
