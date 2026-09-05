@@ -1,4 +1,5 @@
 #include "FullScan.h"
+#include "RE/M/Misc.h"
 
 #include "Manager.h"
 #include "SwapExporter.h"
