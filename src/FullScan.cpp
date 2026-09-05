@@ -1,123 +1,167 @@
 #include "FullScan.h"
 
+#include "Manager.h"
+#include "SwapExporter.h"
+
+#include <vector>
+
 namespace BaseObjectSwapper::FullScan
 {
     void RunDiagnostics()
     {
+        REX::INFO("BOS Exporter: Starting full global swap export");
+
+        RE::DebugNotification(
+            "BOS Exporter: generating full swap log...",
+            nullptr,
+            false);
+
         const auto& [allForms, allFormsLock] =
             RE::TESForm::GetAllForms();
 
         if (!allForms) {
-            REX::ERROR("BOS Global Scan: TESForm::GetAllForms returned null");
+            REX::ERROR(
+                "BOS Global Export: TESForm::GetAllForms returned null");
+
+            RE::DebugMessageBox(
+                "BOS Exporter failed.\n"
+                "TESForm::GetAllForms returned null.\n"
+                "Check the BOS log.");
+
             return;
         }
 
-        [[maybe_unused]] const RE::BSReadLockGuard lockGuard{
-            allFormsLock
-        };
+        std::vector<RE::TESObjectREFR*> refs;
 
-        std::size_t totalForms = 0;
-        std::size_t validForms = 0;
+        {
+            [[maybe_unused]] const RE::BSReadLockGuard lockGuard{
+                allFormsLock
+            };
 
-        std::size_t cellForms = 0;
-        std::size_t referenceForms = 0;
+            for (auto it = allForms->begin();
+                 it != allForms->end();
+                 ++it) {
 
+                auto* form = it->second;
+
+                if (!form) {
+                    continue;
+                }
+
+                if (auto* ref = form->As<RE::TESObjectREFR>()) {
+                    refs.push_back(ref);
+                }
+            }
+        }
+
+        REX::INFO(
+            "BOS Exporter: Collected {} REFRs from global form map",
+            refs.size());
+
+        auto* manager =
+            FormSwap::Manager::GetSingleton();
+
+        if (!manager) {
+            REX::ERROR(
+                "BOS Global Export: Manager singleton not available");
+
+            RE::DebugMessageBox(
+                "BOS Exporter failed.\n"
+                "BOS Manager was not available.\n"
+                "Check the BOS log.");
+
+            return;
+        }
+
+        manager->LoadFormsOnce();
+
+        std::size_t refsSeen = 0;
         std::size_t refsWithBase = 0;
-        std::size_t refsWithFile = 0;
-        std::size_t refsWithParentCell = 0;
-        std::size_t refsWithSaveParentCell = 0;
-        std::size_t refsWithEitherCell = 0;
+        std::size_t refsWithUsableCell = 0;
+        std::size_t swapsExported = 0;
 
-        std::size_t dynamicRefs = 0;
-
-        for (auto it = allForms->begin();
-             it != allForms->end();
-             ++it) {
-
-            ++totalForms;
-
-            auto* form = it->second;
-
-            if (!form) {
-                continue;
-            }
-
-            ++validForms;
-
-            if (form->As<RE::TESObjectCELL>()) {
-                ++cellForms;
-            }
-
-            auto* ref = form->As<RE::TESObjectREFR>();
+        for (auto* ref : refs) {
+            ++refsSeen;
 
             if (!ref) {
                 continue;
             }
 
-            ++referenceForms;
+            auto* base = ref->GetBaseObject();
 
-            if (ref->IsDynamicForm()) {
-                ++dynamicRefs;
+            if (!base) {
+                continue;
             }
 
-            if (ref->GetBaseObject()) {
-                ++refsWithBase;
+            ++refsWithBase;
+
+            if (!(ref->GetParentCell() ||
+                  ref->GetSaveParentCell())) {
+                continue;
             }
 
-            if (ref->GetFile(0)) {
-                ++refsWithFile;
-            }
+            ++refsWithUsableCell;
 
-            const bool hasParent =
-                ref->GetParentCell() != nullptr;
+            const auto swapData =
+                manager->GetSwapData(ref, base);
 
-            const bool hasSaveParent =
-                ref->GetSaveParentCell() != nullptr;
+            auto* swapBase = swapData.first;
 
-            if (hasParent) {
-                ++refsWithParentCell;
-            }
+            if (swapBase &&
+                swapBase != base) {
 
-            if (hasSaveParent) {
-                ++refsWithSaveParentCell;
-            }
+                SwapExporter::RecordSwap(
+                    ref,
+                    swapBase);
 
-            if (hasParent || hasSaveParent) {
-                ++refsWithEitherCell;
+                ++swapsExported;
             }
         }
 
-        REX::INFO("{:*^30}", "BOS GLOBAL SCAN");
+        REX::INFO("{:*^30}", "BOS GLOBAL EXPORT");
+
         REX::INFO(
-            "All forms in map         : {}",
-            totalForms);
+            "REFRs collected from map : {}",
+            refs.size());
+
         REX::INFO(
-            "Valid TESForm entries    : {}",
-            validForms);
-        REX::INFO(
-            "CELL forms               : {}",
-            cellForms);
-        REX::INFO(
-            "REFR forms               : {}",
-            referenceForms);
-        REX::INFO(
-            "Dynamic REFRs            : {}",
-            dynamicRefs);
+            "REFRs processed          : {}",
+            refsSeen);
+
         REX::INFO(
             "REFRs with base          : {}",
             refsWithBase);
+
         REX::INFO(
-            "REFRs with file          : {}",
-            refsWithFile);
+            "REFRs with usable cell   : {}",
+            refsWithUsableCell);
+
         REX::INFO(
-            "REFRs with parent cell   : {}",
-            refsWithParentCell);
+            "Swaps exported           : {}",
+            swapsExported);
+
         REX::INFO(
-            "REFRs with save cell     : {}",
-            refsWithSaveParentCell);
+            "{:*^30}",
+            "END GLOBAL EXPORT");
+
         REX::INFO(
-            "REFRs with either cell   : {}",
-            refsWithEitherCell);
-        REX::INFO("{:*^30}", "END GLOBAL SCAN");
+            "BOS Exporter: Finished. {} swaps exported",
+            swapsExported);
+
+        if (swapsExported > 0) {
+            RE::DebugNotification(
+                "BOS Exporter: full swap log finished.",
+                nullptr,
+                false);
+
+            RE::DebugMessageBox(
+                "BOS Exporter finished.\n"
+                "BOS_Swaps.tsv is ready.\n"
+                "You can close Skyrim.");
+        } else {
+            RE::DebugMessageBox(
+                "BOS Exporter finished, but no swaps were found.\n"
+                "Check the BOS log before closing Skyrim.");
+        }
     }
 }
