@@ -12,10 +12,9 @@ namespace BaseObjectSwapper::FullScan
     {
         REX::INFO("BOS Exporter: Starting full global swap export");
 
-        RE::DebugNotification(
-            "BOS Exporter: generating full swap log...",
-            nullptr,
-            false);
+        RE::DebugMessageBox(
+            "BOS Exporter is about to generate the full swap log.\n"
+            "Click OK to begin.");
 
         const auto& [allForms, allFormsLock] =
             RE::TESForm::GetAllForms();
@@ -150,11 +149,6 @@ namespace BaseObjectSwapper::FullScan
             swapsExported);
 
         if (swapsExported > 0) {
-            RE::DebugNotification(
-                "BOS Exporter: full swap log finished.",
-                nullptr,
-                false);
-
             RE::DebugMessageBox(
                 "BOS Exporter finished.\n"
                 "BOS_Swaps.tsv is ready.\n"
