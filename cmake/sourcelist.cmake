@@ -1,6 +1,7 @@
 set(sources ${sources}
 	src/ConditionalData.cpp
 	src/Hooks.cpp
+        src/FullScan.cpp
 	src/SwapExporter.cpp
 	src/Manager.cpp
 	src/ObjectProperties.cpp

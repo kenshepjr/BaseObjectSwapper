@@ -1,3 +1,4 @@
+#include "FullScan.h"
 #include "Hooks.h"
 #include "Manager.h"
 
@@ -21,6 +22,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_message)
 		break;
 	case SKSE::MessagingInterface::kDataLoaded:
 		FormSwap::Manager::GetSingleton()->PrintConflicts();
+		BaseObjectSwapper::FullScan::RunDiagnostics();
 		break;
 	default:
 		break;

@@ -1,6 +1,7 @@
 set(headers ${headers}
 	src/ConditionalData.h
 	src/Hooks.h
+        src/FullScan.h
 	src/SwapExporter.h
 	src/Manager.h
 	src/ObjectProperties.h
